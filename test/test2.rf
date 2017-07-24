@@ -1,0 +1,45 @@
+######################
+#       Кольцо
+######################
+domain circle1(x, y)
+begin
+    R = 1
+    return R^2 - x^2 - y^2
+end
+domain circle2(x, y)
+begin
+    R = 0.4
+    return R^2 - x^2 - y^2
+end
+domain circle3(x, y)
+begin
+    R = 0.25
+    a = 0.4
+    b = 0
+    return R^2 - (x - a)^2 - (y - b)^2
+end
+domain circle4(x, y)
+begin
+    R = 0.25
+    a = -0.4
+    b = 0
+    return R^2 - (x - a)^2 - (y - b)^2
+end
+domain circle5(x, y)
+begin
+    R = 0.25
+    a = 0
+    b = 0.4
+    return R^2 - (x - a)^2 - (y - b)^2
+end
+domain circle6(x, y)
+begin
+    R = 0.25
+    a = 0
+    b = -0.4
+    return R^2 - (x - a)^2 - (y - b)^2
+end
+domain ring(x,y)
+begin
+    return circle1(x, y) and not circle2(x, y) and not circle3(x, y) and not circle4(x, y) and not circle5(x, y) and not circle6(x, y)
+end

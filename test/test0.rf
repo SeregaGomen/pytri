@@ -1,0 +1,19 @@
+# Circle
+domain circle1(x, y)
+begin
+    R = 0.5
+    return R^2 - x^2 - y^2
+end
+domain circle2(x, y)
+begin
+    R = 1
+    x0 = 0.6
+    y0 = 0
+    return R^2 - (x - x0)^2 - (y - y0)^2
+end
+domain main(x, y)
+begin
+    return circle2(x, y) and not circle1(x, y)
+end
+
+

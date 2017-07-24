@@ -1,0 +1,11 @@
+domain plate_with_hole(x,y)
+begin
+    # This is the comment
+    r = 1
+    p = 4
+    q = 4
+    a = p^2 - x^2
+    b = q^2 - y^2
+    c = r^2 - x^2 - y^2
+    return a + b - c - (a^2 + b^2)^0.5 - (2*a^2 + 2*a*b + 2*b^2 + c^2 - 2*(a + b)*((a^2 + b^2)^0.5))^0.5
+end
