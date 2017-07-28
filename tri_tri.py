@@ -60,30 +60,6 @@ class TTri:
                 print('Warning: ', x1[0], ',', x1[1], ' ', x2[0], ',', x2[1])
         return [(x1[0] + x2[0])*0.5, (x1[1] + x2[1])*0.5]
 
-    # Задание имени файла, содержащего описание R-функции на входном языке
-    def set_file_name(self, file_name):
-        self.__file_name__ = file_name
-        try:
-            file = open(self.__file_name__)
-            code = file.readlines()
-            file.close()
-            self.__parser__.set_code(code)
-        except IOError as err:
-            print('\033[1;31m%s\033[1;m' % err)
-
-    # Здание точности вычислений
-    def set_eps(self, eps):
-        self.__eps__ = eps
-
-    # Здание количества шагов
-    def set_step(self, step):
-        self.__max_step__ = step
-
-    # Здание области поиска
-    def set_region(self, min_x, max_x):
-        self.__min_x__ = min_x
-        self.__max_x__ = max_x
-
     # Процедура поиска границы области
     def __find_boundary__(self, min_x, max_x, max_step):
         try:
@@ -180,33 +156,51 @@ class TTri:
                 return False
         return True
 
+    # Деление граничного сегмента пополам
+    def __optimize_boundary_segment__(self, x1, x2):
+        scale = 0.25   # Параметр, определяющий длину участка поиска нуля R-функции
+        xc = [(x1[0] + x2[0])/2, (x1[1] + x2[1])/2]
+        if x1[1] == x2[1]:
+            # Сегмент параллелен оси абсцисс
+            y1 = [xc[0], xc[1] + scale*self.__length__(x1, x2)]
+            y2 = [xc[0], xc[1] - scale*self.__length__(x1, x2)]
+            if sign(self.__parser__.run(y1[0], y1[1])) != sign(self.__parser__.run(y2[0], y2[1])):
+                return True, self.__bisect__(y1, y2)
+            return False, [0, 0]
+        # Общий случай
+        # Уравнение прямой, ортогональной граничному сегменту (y = kx + b), проходящей через точку xc
+        k = (x2[0] - x1[0])/(x1[1] - x2[1])
+        b = xc[1] - xc[0]*k
+        # Координаты точек, лежащих на ортогогнальной прямой на заданном расстоянии от точки xc
+        l = scale*self.__length__(x1, x2)
+        d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1)*(b**2 - 2*b*xc[1] - l**2 + xc[0]**2 + xc[1]**2)
+        if abs(d) < self.__eps__:
+            d = 0
+        px = [(-(2*b*k - 2*k*xc[1] - 2*xc[0]) - d**0.5)/2/(k**2 + 1),
+              (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)]
+        py = [px[0]*k + b, px[1]*k + b]
+        if sign(self.__parser__.run(px[0], py[0])) != sign(self.__parser__.run(px[1], py[1])):
+            return True, self.__bisect__([px[0], py[0]], [px[1], py[1]])
+        return False, [0, 0]
+
     # Оптимизация границы области
-    def __optimize_boundary(self):
+    def __optimize_boundary__(self):
         is_optimize = False
-        # Оптимизация по критерию отношения длин соседних граничных сегментов
+        # Оптимизация по критерию соотношения длин соседних граничных сегментов
         for i in range(0, len(self.be)):
             # Определяем длины соседних граничных сегментов
             len1 = self.__length__(self.x[self.be[i][0]], self.x[self.be[i][1]])
             len2 = self.__length__(self.x[self.be[self.be[i][2]][0]], self.x[self.be[self.be[i][2]][1]])
             len3 = self.__length__(self.x[self.be[self.be[i][3]][0]], self.x[self.be[self.be[i][3]][1]])
-            if 0.5 < len1/len2 < 1.5 or 0.5 < len2/len3 < 1.5:
+#            print(len1, len2, len3, len1/len2, len1/len3)
+            if i == len(self.be) - 1:
+                is_optimize = True
+            if len1/len2 < 1.2 and len1/len3 < 1.2:
                 continue
             is_optimize = True
-            # Уточняем границу в окрестности текущего граничного сегмента
-            index = [self.be[i][0], self.be[i][1], self.be[self.be[i][2]][0], self.be[self.be[i][2]][1],
-                     self.be[self.be[i][3]][0], self.be[self.be[i][3]][1]]
-            min_x = [min(self.x[j][0] for j in index), min(self.x[j][1] for j in index)]
-            max_x = [max(self.x[j][0] for j in index), max(self.x[j][1] for j in index)]
-            len_x = (max_x[0] - min_x[0])/2
-            len_y = (max_x[1] - min_x[1])/2
-            min_x[0] -= len_x
-            max_x[0] += len_x
-            min_x[1] -= len_y
-            max_x[1] += len_y
-
-            if self.__find_boundary__(min_x, max_x, 10) is False:
-                return False
-#            print(len1, len2, len3)
+            is_success, x = self.__optimize_boundary_segment__(self.x[self.be[i][0]], self.x[self.be[i][1]])
+            if is_success is True:
+                self.x.append(x)
         if is_optimize is True:
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
@@ -228,10 +222,34 @@ class TTri:
         # Формирование границы области
         if self.__create_boundary__() is False:
             return False
-        # Оптимизация границы (максимум десять итераций)
+        # Оптимизация границы
         if is_optimize is True:
             if self.__remove_degenerate_boundary__() is False:
                 return False
-            if self.__optimize_boundary() is False:
-                return False
+#            if self.__optimize_boundary__() is False:
+#                return False
         return True
+
+    # Задание имени файла, содержащего описание R-функции на входном языке
+    def set_file_name(self, file_name):
+        self.__file_name__ = file_name
+        try:
+            file = open(self.__file_name__)
+            code = file.readlines()
+            file.close()
+            self.__parser__.set_code(code)
+        except IOError as err:
+            print('\033[1;31m%s\033[1;m' % err)
+
+    # Здание точности вычислений
+    def set_eps(self, eps):
+        self.__eps__ = eps
+
+    # Здание количества шагов
+    def set_step(self, step):
+        self.__max_step__ = step
+
+    # Здание области поиска
+    def set_region(self, min_x, max_x):
+        self.__min_x__ = min_x
+        self.__max_x__ = max_x

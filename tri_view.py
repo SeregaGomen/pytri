@@ -12,6 +12,7 @@ class TTriView(Frame):
         Frame.__init__(self, root)
         root.title('R-function - ' + name)
 
+        self.__scale__ = 1
         self.__x__ = x
         self.__fe__ = fe
         self.__be__ = be
@@ -29,14 +30,21 @@ class TTriView(Frame):
         self.display.grid(row=0, sticky=W+E+N+S)
         self.pack(fill=BOTH, expand=1)
         self.bind("<Configure>", self.resize)
+        self.display.bind("<Double-1>", self.repaint)
         self.paint(size, size)
 
     def resize(self, event):
         self.paint(event.width, event.height)
 
-    def paint(self, width, height):
+    def repaint(self, event):
+        self.__scale__ *= 1.1
+        self.paint(600, 600, self.__scale__)
+
+    def paint(self, width, height, scale=1):
         self.display.delete('LINE')
         self.display.delete('OVAL')
+        width = int(width*scale)
+        height = int(height*scale)
 
         dx = [self.__x_max__[0] - self.__x_min__[0], self.__x_max__[1] - self.__x_min__[1]]
         s_x = [(self.__x_max__[0] + self.__x_min__[0])/2, (self.__x_max__[1] + self.__x_min__[1])/2]
