@@ -7,12 +7,12 @@ from tri_tri import TTri
 
 
 def main():
-    file_name = 'test/test0.rf'
+    file_name = 'test/test2.rf'
     tri = TTri()
 
     tri.set_file_name(file_name)
     tri.set_step(250)
-    tri.set_eps(1.0e-6)
+    tri.set_eps(1.0e-3)
 
     if tri.start() is False:
         return
