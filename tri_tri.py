@@ -141,7 +141,9 @@ class TTri:
     def __remove_degenerate_boundary__(self):
         del_index = []
         # Удаление вырожденных участков границы
+        self.__progress__.set_process('Find degenerate boundary segment...', 1, len(self.fe))
         for i in range(0, len(self.be)):
+            self.__progress__.set_progress(i + 1)
             if self.__length__(self.x[self.be[i][0]], self.x[self.be[i][1]]) < self.__eps__:
                 del_index.append(self.be[i][1])
         if len(del_index):
@@ -210,6 +212,27 @@ class TTri:
                 return False
         return True
 
+    # Удаление "висячих" узлов
+    def __remove_orphan_vertex__(self):
+        attr = np.zeros(len(self.x))
+        self.__progress__.set_process('Find orphan vertex...', 1, len(self.fe))
+        for i in range(0, len(self.be)):
+            self.__progress__.set_progress(i + 1)
+            attr[self.be[i][0]] = attr[self.be[i][1]] = 1
+        is_orphan = False
+        for i in reversed(range(0, len(attr))):
+            if (attr[i]) == 0:
+                self.x.pop(i)
+                is_orphan = True
+        if is_orphan is True:
+            # Перетриангуляция
+            if self.__pre_triangulation__() is False:
+                return False
+            # Формирование границы области
+            if self.__create_boundary__() is False:
+                return False
+        return True
+
     # Запуск процедуры построения триангуляции
     def start(self):
         is_optimize = True
@@ -224,10 +247,12 @@ class TTri:
             return False
         # Оптимизация границы
         if is_optimize is True:
+            if self.__remove_orphan_vertex__() is False:
+                return False
             if self.__remove_degenerate_boundary__() is False:
                 return False
-#            if self.__optimize_boundary__() is False:
-#                return False
+            if self.__optimize_boundary__() is False:
+                return False
         return True
 
     # Задание имени файла, содержащего описание R-функции на входном языке
