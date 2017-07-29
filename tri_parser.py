@@ -79,6 +79,9 @@ class TParser:
             self.code += c[i]
         self.compile()
 
+    def is_error(self):
+        return False if self.error == '' else True
+
     # Обработка арифметического выражения
     def get_exp(self, result):
         self.get_token()

@@ -235,6 +235,20 @@ class TTri:
 
     # Запуск процедуры построения триангуляции
     def start(self):
+        try:
+            file = open(self.__file_name__)
+            code = file.readlines()
+            file.close()
+        except IOError as err:
+            print('\033[1;31m%s\033[1;m' % err)
+            return False
+
+        try:
+            self.__parser__.set_code(code)
+        except TException as err:
+            err.print_error()
+            return False
+
         is_optimize = True
         # Поиск границы области
         if self.__find_boundary__(self.__min_x__, self.__max_x__, self.__max_step__) is False:
@@ -258,13 +272,6 @@ class TTri:
     # Задание имени файла, содержащего описание R-функции на входном языке
     def set_file_name(self, file_name):
         self.__file_name__ = file_name
-        try:
-            file = open(self.__file_name__)
-            code = file.readlines()
-            file.close()
-            self.__parser__.set_code(code)
-        except IOError as err:
-            print('\033[1;31m%s\033[1;m' % err)
 
     # Здание точности вычислений
     def set_eps(self, eps):
