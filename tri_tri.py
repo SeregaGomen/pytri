@@ -118,10 +118,12 @@ class TTri:
                                 self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m + 1 if m + 1 < 3 else 0]) or \
                                 (self.fe[i][k] == self.fe[j][m + 1 if m + 1 < 3 else 0] and
                                  self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m]):
-                            v[k] = 1
+                            v[k] = j
             for j in range(0, 3):
                 if v[j] == -1:
                     self.be.append([self.fe[i][j], self.fe[i][j + 1 if j + 1 < 3 else 0], -1, -1])
+            for val in v:
+                self.fe[i].append(val)
         # Поиск соседей к граничным элементам
         self.__progress__.set_process('Find boundary neighborhood...', 1, len(self.fe))
         for i in range(0, len(self.be)):
