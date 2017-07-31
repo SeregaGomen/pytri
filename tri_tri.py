@@ -253,7 +253,7 @@ class TTri:
         # Поиск границы области
         if self.__find_boundary__(self.__min_x__, self.__max_x__, self.__max_step__) is False:
             return False
-        # Предварительная триангуляция  
+        # Предварительная триангуляция
         if self.__pre_triangulation__() is False:
             return False
         # Формирование границы области
