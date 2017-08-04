@@ -123,8 +123,6 @@ class TTri:
                 if v[j] == -1:
                     self.be.append([self.fe[i][j], self.fe[i][j + 1 if j + 1 < 3 else 0], -1, -1])
             self.fe[i] += v
-#            for val in v:
-#                self.fe[i].append(val)
         # Поиск соседей к граничным элементам
         self.__progress__.set_process('Find boundary neighborhood...', 1, len(self.be))
         for i in range(0, len(self.be)):
@@ -185,12 +183,12 @@ class TTri:
               (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)]
         py = [px[0]*k + b, px[1]*k + b]
         if sign(self.__parser__.run(px[0], py[0])) != sign(self.__parser__.run(px[1], py[1])):
-            return True, self.__bisect__([px[0], py[0]], [px[1], py[1]])
-        return False, [0, 0]
+            x = self.__bisect__([px[0], py[0]], [px[1], py[1]])
+            self.x.append(x)
 
     # Оптимизация границы области
     def __optimize_boundary__(self):
-        is_optimize = False
+        size_x = len(self.x)
         # Оптимизация по критерию соотношения длин соседних граничных сегментов
         for i in range(0, len(self.be)):
             # Определяем длины соседних граничных сегментов
@@ -198,15 +196,12 @@ class TTri:
             len2 = self.__length__(self.x[self.be[self.be[i][2]][0]], self.x[self.be[self.be[i][2]][1]])
             len3 = self.__length__(self.x[self.be[self.be[i][3]][0]], self.x[self.be[self.be[i][3]][1]])
 #            print(len1, len2, len3, len1/len2, len1/len3)
-            if i == len(self.be) - 1:
-                is_optimize = True
             if len1/len2 < 1.2 and len1/len3 < 1.2:
                 continue
-            is_optimize = True
-            is_success, x = self.__optimize_boundary_segment__(self.x[self.be[i][0]], self.x[self.be[i][1]])
-            if is_success is True:
-                self.x.append(x)
-        if is_optimize is True:
+            count = int(max(len1/len2, len1/len3))
+            print(count, len1, len2, len3)
+            self.__optimize_boundary_segment__(self.x[self.be[i][0]], self.x[self.be[i][1]])
+        if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
                 return False
