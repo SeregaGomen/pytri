@@ -168,8 +168,7 @@ class TTri:
             y1 = [xc[0], xc[1] + scale*self.__length__(x1, x2)]
             y2 = [xc[0], xc[1] - scale*self.__length__(x1, x2)]
             if sign(self.__parser__.run(y1[0], y1[1])) != sign(self.__parser__.run(y2[0], y2[1])):
-                return True, self.__bisect__(y1, y2)
-            return False, [0, 0]
+                self.x.append(self.__bisect__(y1, y2))
         # Общий случай
         # Уравнение прямой, ортогональной граничному сегменту (y = kx + b), проходящей через точку xc
         k = (x2[0] - x1[0])/(x1[1] - x2[1])
@@ -183,8 +182,7 @@ class TTri:
               (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)]
         py = [px[0]*k + b, px[1]*k + b]
         if sign(self.__parser__.run(px[0], py[0])) != sign(self.__parser__.run(px[1], py[1])):
-            x = self.__bisect__([px[0], py[0]], [px[1], py[1]])
-            self.x.append(x)
+            self.x.append(self.__bisect__([px[0], py[0]], [px[1], py[1]]))
 
     # Оптимизация границы области
     def __optimize_boundary__(self):
@@ -199,7 +197,7 @@ class TTri:
             if len1/len2 < 1.2 and len1/len3 < 1.2:
                 continue
             count = int(max(len1/len2, len1/len3))
-            print(count, len1, len2, len3)
+#            print(count, len1, len2, len3)
             self.__optimize_boundary_segment__(self.x[self.be[i][0]], self.x[self.be[i][1]])
         if size_x != len(self.x):
             # Перетриангуляция
