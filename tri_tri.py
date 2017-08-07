@@ -10,6 +10,8 @@
 # https://docs.scipy.org/doc/scipy/reference/tutorial/spatial.html
 
 
+from math import acos
+from math import ceil
 from numpy import sign
 from tri_parser import TParser
 from tri_error import TException
@@ -28,6 +30,8 @@ class TTri:
         self.__min_x__ = [-10, -10]         # Габариты области поиска границы
         self.__max_x__ = [10, 10]           # ...
         self.__max_step__ = 100             # Максимальное количество итераций для поиска границы
+        self.__max_angle__ = 15             # Максимальный угол между соседними граничными сегментами
+        self.__max_ratio__ = 2              # Максимальное соотношение длин граничных сегментов
         self.__parser__ = TParser()         # Парсер входного языка описания R-функции
         self.__progress__ = TProgress()     # Индикатор прогресса расчета
 
@@ -35,6 +39,13 @@ class TTri:
     # Определение расстояния между двумя точками
     def __length__(x1, x2):
         return ((x2[0] - x1[0])**2 + (x2[1] - x1[1])**2)**0.5
+
+    # Определение угла между соседними граничными сегментами
+    def __angle__(self, i, j):
+        # Координаты направляющих векторов i и j граничных сегментов
+        vi = [self.x[self.be[i][0]][0] - self.x[self.be[i][1]][0], self.x[self.be[i][0]][1] - self.x[self.be[i][1]][1]]
+        vj = [self.x[self.be[j][0]][0] - self.x[self.be[j][1]][0], self.x[self.be[j][0]][1] - self.x[self.be[j][1]][1]]
+        return 180/3.14*acos(abs(vi[0]*vj[0] + vi[1]*vj[1])/((vi[0]**2 + vi[1]**2)**0.5)/((vj[0]**2 + vj[1]**2)**0.5))
 
     # Проверка принадлежности треугольника исходной области
     def __check_triangle__(self, i, j, k):
@@ -159,46 +170,69 @@ class TTri:
                 return False
         return True
 
-    # Деление граничного сегмента пополам
-    def __optimize_boundary_segment__(self, x1, x2):
+    # Деление "длинного" граничного сегмента
+    def __optimize_boundary_segment_length__(self, x1, x2, count):
         scale = 0.25   # Параметр, определяющий длину участка поиска нуля R-функции
-        xc = [(x1[0] + x2[0])/2, (x1[1] + x2[1])/2]
-        if x1[1] == x2[1]:
-            # Сегмент параллелен оси абсцисс
-            y1 = [xc[0], xc[1] + scale*self.__length__(x1, x2)]
-            y2 = [xc[0], xc[1] - scale*self.__length__(x1, x2)]
-            if sign(self.__parser__.run(y1[0], y1[1])) != sign(self.__parser__.run(y2[0], y2[1])):
-                self.x.append(self.__bisect__(y1, y2))
-        # Общий случай
-        # Уравнение прямой, ортогональной граничному сегменту (y = kx + b), проходящей через точку xc
-        k = (x2[0] - x1[0])/(x1[1] - x2[1])
-        b = xc[1] - xc[0]*k
-        # Координаты точек, лежащих на ортогогнальной прямой на заданном расстоянии от точки xc
-        l = scale*self.__length__(x1, x2)
-        d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1)*(b**2 - 2*b*xc[1] - l**2 + xc[0]**2 + xc[1]**2)
-        if abs(d) < self.__eps__:
-            d = 0
-        px = [(-(2*b*k - 2*k*xc[1] - 2*xc[0]) - d**0.5)/2/(k**2 + 1),
-              (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)]
-        py = [px[0]*k + b, px[1]*k + b]
-        if sign(self.__parser__.run(px[0], py[0])) != sign(self.__parser__.run(px[1], py[1])):
-            self.x.append(self.__bisect__([px[0], py[0]], [px[1], py[1]]))
+        for i in range(1, count):
+            xc = [x1[0] + i*(x2[0] - x1[0])/count, x1[1] + i*(x2[1] - x1[1])/count]
+            if x1[1] == x2[1]:
+                # Сегмент параллелен оси абсцисс
+                y1 = [xc[0], xc[1] + scale*self.__length__(x1, x2)]
+                y2 = [xc[0], xc[1] - scale*self.__length__(x1, x2)]
+                if sign(self.__parser__.run(y1[0], y1[1])) != sign(self.__parser__.run(y2[0], y2[1])):
+                    self.x.append(self.__bisect__(y1, y2))
+            # Общий случай
+            # Уравнение прямой, ортогональной граничному сегменту (y = kx + b), проходящей через точку xc
+            k = (x2[0] - x1[0])/(x1[1] - x2[1])
+            b = xc[1] - xc[0]*k
+            # Координаты точек, лежащих на ортогогнальной прямой на заданном расстоянии от точки xc
+            l = scale*self.__length__(x1, x2)
+            d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1)*(b**2 - 2*b*xc[1] - l**2 + xc[0]**2 + xc[1]**2)
+            px = [(-(2*b*k - 2*k*xc[1] - 2*xc[0]) - d**0.5)/2/(k**2 + 1),
+                  (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)]
+            py = [px[0]*k + b, px[1]*k + b]
+            if sign(self.__parser__.run(px[0], py[0])) != sign(self.__parser__.run(px[1], py[1])):
+                self.x.append(self.__bisect__([px[0], py[0]], [px[1], py[1]]))
 
-    # Оптимизация границы области
-    def __optimize_boundary__(self):
+    # Оптимизация границы области по критерию соотношения длин соседних сегментов
+    def __optimize_boundary_for_length__(self):
         size_x = len(self.x)
-        # Оптимизация по критерию соотношения длин соседних граничных сегментов
         for i in range(0, len(self.be)):
             # Определяем длины соседних граничных сегментов
             len1 = self.__length__(self.x[self.be[i][0]], self.x[self.be[i][1]])
             len2 = self.__length__(self.x[self.be[self.be[i][2]][0]], self.x[self.be[self.be[i][2]][1]])
             len3 = self.__length__(self.x[self.be[self.be[i][3]][0]], self.x[self.be[self.be[i][3]][1]])
 #            print(len1, len2, len3, len1/len2, len1/len3)
-            if len1/len2 < 1.2 and len1/len3 < 1.2:
-                continue
+#            if len1/len2 < 1.2 and len1/len3 < 1.2:
+#                continue
             count = int(max(len1/len2, len1/len3))
+            if count < self.__max_ratio__:
+                continue
 #            print(count, len1, len2, len3)
-            self.__optimize_boundary_segment__(self.x[self.be[i][0]], self.x[self.be[i][1]])
+            self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], count)
+        if size_x != len(self.x):
+            # Перетриангуляция
+            if self.__pre_triangulation__() is False:
+                return False
+            # Формирование границы области
+            if self.__create_boundary__() is False:
+                return False
+        return True
+
+    # Оптимизация границы области по критерию угла между соседними сегментами
+    def __optimize_boundary_for_angle__(self):
+        size_x = len(self.x)
+        for i in range(0, len(self.be)):
+            # Определяем углы между соседними граничными сегментами
+            angle = max(self.__angle__(i, self.be[i][2]), self.__angle__(i, self.be[i][3]))
+            if angle < self.__max_angle__:
+                continue
+            if self.x[self.be[i][0]][0] == self.x[self.be[i][1]][0]:
+                print(angle)
+
+            print(angle)
+            count = ceil(angle/self.__max_angle__)
+            self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], count)
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
@@ -255,13 +289,18 @@ class TTri:
         # Формирование границы области
         if self.__create_boundary__() is False:
             return False
+        # Удаление "висячих" узлов
+        if self.__remove_orphan_vertex__() is False:
+            return False
+        # Удаление вырожденых граничных сегментов
+        if self.__remove_degenerate_boundary__() is False:
+            return False
         # Оптимизация границы
         if is_optimize is True:
-            if self.__remove_orphan_vertex__() is False:
+            # Оптимизация по критерию длины сегмента
+            if self.__optimize_boundary_for_length__() is False:
                 return False
-            if self.__remove_degenerate_boundary__() is False:
-                return False
-            if self.__optimize_boundary__() is False:
+            if self.__optimize_boundary_for_angle__() is False:
                 return False
         return True
 
@@ -281,3 +320,11 @@ class TTri:
     def set_region(self, min_x, max_x):
         self.__min_x__ = min_x
         self.__max_x__ = max_x
+
+    # Здание максимального соотношения длин соседних сегментов
+    def set_ratio(self, ratio):
+        self.__max_ratio__ = ratio
+
+    # Здание максимального соотношения уголов между соседними сегментами
+    def set_angle(self, angle):
+        self.__max_angle__ = angle
