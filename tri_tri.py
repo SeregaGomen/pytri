@@ -34,6 +34,8 @@ class TTri:
         self.__max_ratio__ = 2              # Максимальное соотношение длин граничных сегментов
         self.__parser__ = TParser()         # Парсер входного языка описания R-функции
         self.__progress__ = TProgress()     # Индикатор прогресса расчета
+        self.__length_optimize__ = True     # Оптимизация по критерию соотношения длин соседних граничных сегментов
+        self.__angle_optimize__ = True      # Оптимизация по критерию угла между соседними граничными сегментами
 
     @staticmethod
     # Определение расстояния между двумя точками
@@ -58,7 +60,7 @@ class TTri:
     def __bisect__(self, x1, x2):
         i = 0
         x = [(x1[0] + x2[0])*0.5, (x1[1] + x2[1])*0.5]
-        while i < 100:
+        while i < self.__max_step__:
             if sign(self.__parser__.run(x1[0], x1[1])) != sign(self.__parser__.run(x[0], x[1])):
                 x2 = [x[0], x[1]]
             else:
@@ -67,7 +69,7 @@ class TTri:
             if self.__length__(x1, x2) < self.__eps__:
                 break
             i += 1
-            if i == 100:
+            if i == self.__max_step__:
                 print('Warning: ', x1[0], ',', x1[1], ' ', x2[0], ',', x2[1])
         return [(x1[0] + x2[0])*0.5, (x1[1] + x2[1])*0.5]
 
@@ -120,16 +122,15 @@ class TTri:
             # Находим треугольники, содержащие граничные ребра
 #            for j in range(i + 1, len(self.fe)):
             for j in range(0, len(self.fe)):
-                if i == j:
-                    continue
-                # Ищем ребра соседних треугольников, которые не являются общими
-                for k in range(0, 3):
-                    for m in range(0, 3):
-                        if (self.fe[i][k] == self.fe[j][m] and
-                                self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m + 1 if m + 1 < 3 else 0]) or \
-                                (self.fe[i][k] == self.fe[j][m + 1 if m + 1 < 3 else 0] and
-                                 self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m]):
-                            v[k] = j
+                if i != j:
+                    # Ищем ребра соседних треугольников, которые не являются общими
+                    for k in range(0, 3):
+                        for m in range(0, 3):
+                            if (self.fe[i][k] == self.fe[j][m] and
+                                    self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m + 1 if m + 1 < 3 else 0]) or \
+                                    (self.fe[i][k] == self.fe[j][m + 1 if m + 1 < 3 else 0] and
+                                     self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m]):
+                                v[k] = j
             for j in range(0, 3):
                 if v[j] == -1:
                     self.be.append([self.fe[i][j], self.fe[i][j + 1 if j + 1 < 3 else 0], -1, -1])
@@ -139,14 +140,13 @@ class TTri:
         for i in range(0, len(self.be)):
             self.__progress__.set_progress(i + 1)
             for j in range(0, len(self.be)):
-                if i == j:
-                    continue
-                if self.be[i][0] == self.be[j][0] or self.be[i][0] == self.be[j][1] or \
-                   self.be[i][1] == self.be[j][0] or self.be[i][1] == self.be[j][1]:
-                    if self.be[i][2] < 0:
-                        self.be[i][2] = j
-                    else:
-                        self.be[i][3] = j
+                if i != j:
+                    if self.be[i][0] == self.be[j][0] or self.be[i][0] == self.be[j][1] or \
+                       self.be[i][1] == self.be[j][0] or self.be[i][1] == self.be[j][1]:
+                        if self.be[i][2] < 0:
+                            self.be[i][2] = j
+                        else:
+                            self.be[i][3] = j
         return True
 
     # Удаление вырожденных граничных сегментов
@@ -202,14 +202,9 @@ class TTri:
             len1 = self.__length__(self.x[self.be[i][0]], self.x[self.be[i][1]])
             len2 = self.__length__(self.x[self.be[self.be[i][2]][0]], self.x[self.be[self.be[i][2]][1]])
             len3 = self.__length__(self.x[self.be[self.be[i][3]][0]], self.x[self.be[self.be[i][3]][1]])
-#            print(len1, len2, len3, len1/len2, len1/len3)
-#            if len1/len2 < 1.2 and len1/len3 < 1.2:
-#                continue
-            count = int(max(len1/len2, len1/len3))
-            if count < self.__max_ratio__:
-                continue
-#            print(count, len1, len2, len3)
-            self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], count)
+            count = max(len1/len2, len1/len3)
+            if count > self.__max_ratio__:
+                self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], ceil(count))
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
@@ -225,14 +220,13 @@ class TTri:
         for i in range(0, len(self.be)):
             # Определяем углы между соседними граничными сегментами
             angle = max(self.__angle__(i, self.be[i][2]), self.__angle__(i, self.be[i][3]))
-            if angle < self.__max_angle__:
-                continue
-            if self.x[self.be[i][0]][0] == self.x[self.be[i][1]][0]:
-                print(angle)
-
-            print(angle)
-            count = ceil(angle/self.__max_angle__)
-            self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], count)
+            if angle > self.__max_angle__:
+#################
+                if self.x[self.be[i][0]][0] == self.x[self.be[i][1]][0]:
+                    print(angle)
+#################
+                count = ceil(angle/self.__max_angle__)
+                self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], count)
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
@@ -279,7 +273,6 @@ class TTri:
             err.print_error()
             return False
 
-        is_optimize = True
         # Поиск границы области
         if self.__find_boundary__(self.__min_x__, self.__max_x__, self.__max_step__) is False:
             return False
@@ -296,10 +289,12 @@ class TTri:
         if self.__remove_degenerate_boundary__() is False:
             return False
         # Оптимизация границы
-        if is_optimize is True:
-            # Оптимизация по критерию длины сегмента
+        # Оптимизация по критерию длины сегмента
+        if self.__length_optimize__ is True:
             if self.__optimize_boundary_for_length__() is False:
                 return False
+        # Оптимизация по критерию длины сегмента
+        if self.__angle_optimize__ is True:
             if self.__optimize_boundary_for_angle__() is False:
                 return False
         return True
@@ -328,3 +323,11 @@ class TTri:
     # Здание максимального соотношения уголов между соседними сегментами
     def set_angle(self, angle):
         self.__max_angle__ = angle
+
+    # Здание оптимизвции по углу между соседними сегментами
+    def set_angle_optimize(self, is_angle):
+        self.__angle_optimize__ = is_angle
+
+    # Здание оптимизвции по соотношению длин соседних сегментов
+    def set_length_optimize(self, is_length):
+        self.__length_optimize__ = is_length
