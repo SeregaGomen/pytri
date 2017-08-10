@@ -186,7 +186,9 @@ class TTri:
         return True
 
     # Деление "длинного" граничного сегмента
-    def __optimize_boundary_segment_length__(self, x1, x2, count=2.0):
+    def __optimize_boundary_segment_length__(self, index, count=2.0):
+        x1 = [self.x[self.be[index][0]][0], self.x[self.be[index][0]][1]]
+        x2 = [self.x[self.be[index][1]][0], self.x[self.be[index][1]][1]]
         scale = 1   # Параметр, определяющий длину участка поиска нуля R-функции
         for i in range(1, int(count)):
             xc = [x1[0] + i*(x2[0] - x1[0])/count, x1[1] + i*(x2[1] - x1[1])/count]
@@ -219,7 +221,7 @@ class TTri:
             len3 = self.__length__(self.x[self.be[self.be[i][3]][0]], self.x[self.be[self.be[i][3]][1]])
             count = max(len1/len2, len1/len3)
             if count > self.__max_ratio__:
-                self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], ceil(count))
+                self.__optimize_boundary_segment_length__(i, ceil(count))
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
@@ -241,7 +243,7 @@ class TTri:
                     print(angle)
 #################
 #                count = ceil(angle/self.__max_angle__)
-                self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]])
+                self.__optimize_boundary_segment_length__(i)
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
