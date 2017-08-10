@@ -42,6 +42,21 @@ class TTri:
     def __length__(x1, x2):
         return ((x2[0] - x1[0])**2 + (x2[1] - x1[1])**2)**0.5
 
+    # Определение принадлежности точки p i-ому треугольнику
+    # http://cyber-code.ru/tochka_v_treugolnike/
+    def __check_point_in_triangle__(self, p, i):
+        # Переносим первую вершину треугольника в начало координат
+        t = [[0, 0],
+             [self.x[self.fe[i][1]][0] - self.x[self.fe[i][0]][0], self.x[self.fe[i][1]][1] - self.x[self.fe[i][0]][1]],
+             [self.x[self.fe[i][2]][0] - self.x[self.fe[i][0]][0], self.x[self.fe[i][2]][1] - self.x[self.fe[i][0]][1]]]
+        p = [p[0] - self.x[self.fe[i][0]][0], p[1] - self.x[self.fe[i][0]][1]]
+        m = (p[0]*t[1][1] - t[1][0]*p[1])/(t[2][0]*t[1][1] - t[1][0]*t[2][1])
+        if 0 <= m <= 1:
+            l = (p[0] - m*t[2][0])/t[1][0]
+            if l >= 0 and (m + l) <= 1:
+                return True
+        return False
+
     # Определение угла между соседними граничными сегментами
     def __angle__(self, i, j):
         # Координаты направляющих векторов i и j граничных сегментов
@@ -171,28 +186,28 @@ class TTri:
         return True
 
     # Деление "длинного" граничного сегмента
-    def __optimize_boundary_segment_length__(self, x1, x2, count):
-        scale = 0.25   # Параметр, определяющий длину участка поиска нуля R-функции
-        for i in range(1, count):
+    def __optimize_boundary_segment_length__(self, x1, x2, count=2.0):
+        scale = 1   # Параметр, определяющий длину участка поиска нуля R-функции
+        for i in range(1, int(count)):
             xc = [x1[0] + i*(x2[0] - x1[0])/count, x1[1] + i*(x2[1] - x1[1])/count]
             if x1[1] == x2[1]:
                 # Сегмент параллелен оси абсцисс
-                y1 = [xc[0], xc[1] + scale*self.__length__(x1, x2)]
-                y2 = [xc[0], xc[1] - scale*self.__length__(x1, x2)]
-                if sign(self.__parser__.run(y1[0], y1[1])) != sign(self.__parser__.run(y2[0], y2[1])):
-                    self.x.append(self.__bisect__(y1, y2))
-            # Общий случай
-            # Уравнение прямой, ортогональной граничному сегменту (y = kx + b), проходящей через точку xc
-            k = (x2[0] - x1[0])/(x1[1] - x2[1])
-            b = xc[1] - xc[0]*k
-            # Координаты точек, лежащих на ортогогнальной прямой на заданном расстоянии от точки xc
-            l = scale*self.__length__(x1, x2)
-            d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1)*(b**2 - 2*b*xc[1] - l**2 + xc[0]**2 + xc[1]**2)
-            px = [(-(2*b*k - 2*k*xc[1] - 2*xc[0]) - d**0.5)/2/(k**2 + 1),
-                  (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)]
-            py = [px[0]*k + b, px[1]*k + b]
-            if sign(self.__parser__.run(px[0], py[0])) != sign(self.__parser__.run(px[1], py[1])):
-                self.x.append(self.__bisect__([px[0], py[0]], [px[1], py[1]]))
+                p1 = [xc[0], xc[1] + scale*self.__length__(x1, x2)]
+                p2 = [xc[0], xc[1] - scale*self.__length__(x1, x2)]
+            else:
+                # Общий случай
+                # Уравнение прямой, ортогональной граничному сегменту (y = kx + b), проходящей через точку xc
+                k = (x2[0] - x1[0])/(x1[1] - x2[1])
+                b = xc[1] - xc[0]*k
+                # Координаты точек, лежащих на ортогогнальной прямой на заданном расстоянии от точки xc
+                l = scale*self.__length__(x1, x2)
+                d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1)*(b**2 - 2*b*xc[1] - l**2 + xc[0]**2 + xc[1]**2)
+                r1 = (-(2*b*k - 2*k*xc[1] - 2*xc[0]) - d**0.5)/2/(k**2 + 1)
+                r2 = (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)
+                p1 = [r1, r1*k + b]
+                p2 = [r2, r2*k + b]
+            if sign(self.__parser__.run(p1[0], p1[1])) != sign(self.__parser__.run(p2[0], p2[1])):
+                self.x.append(self.__bisect__(p1, p2))
 
     # Оптимизация границы области по критерию соотношения длин соседних сегментов
     def __optimize_boundary_for_length__(self):
@@ -225,8 +240,8 @@ class TTri:
                 if self.x[self.be[i][0]][0] == self.x[self.be[i][1]][0]:
                     print(angle)
 #################
-                count = ceil(angle/self.__max_angle__)
-                self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]], count)
+#                count = ceil(angle/self.__max_angle__)
+                self.__optimize_boundary_segment_length__(self.x[self.be[i][0]], self.x[self.be[i][1]])
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
