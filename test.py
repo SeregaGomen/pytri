@@ -12,11 +12,11 @@ def main():
 
     tri.set_file_name(file_name)
     tri.set_angle_optimize(True)
-    tri.set_length_optimize(False)
+    tri.set_length_optimize(True)
     tri.set_step(250)
 #    tri.set_step(600)
     tri.set_eps(1.0e-3)
-    tri.set_angle(10)
+    tri.set_angle(15)
     tri.set_ratio(1.05)
 
     if tri.start() is False:
