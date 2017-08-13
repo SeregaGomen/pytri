@@ -219,8 +219,8 @@ class TTri:
     # Деление граничного сегмента по критерию угла
     def __optimize_boundary_segment_angle__(self, index, count=2.0):
         scale = 0.05
-        h = [(self.x[self.be[index][1]][0] - self.x[self.be[index][0]][0])/2,
-             (self.x[self.be[index][1]][1] - self.x[self.be[index][0]][1])/2]
+        h = [(self.x[self.be[index][1]][0] - self.x[self.be[index][0]][0])/count,
+             (self.x[self.be[index][1]][1] - self.x[self.be[index][0]][1])/count]
         for i in range(0, int(count)):
             x1 = [self.x[self.be[index][0]][0] + i*h[0], self.x[self.be[index][0]][1] + i*h[1]]
             x2 = [self.x[self.be[index][0]][0] + (i + 1)*h[0], self.x[self.be[index][0]][1] + (i + 1)*h[1]]
@@ -233,7 +233,7 @@ class TTri:
                 p2 = [p1[0] + 1000*(p2[0] - p1[0]), p1[1] + 1000*(p2[1] - p1[1])]
             else:
                 p2 = xc
-                p1 = [p2[0] + 1000*scale*(p1[0] - p2[0]), p2[1] + 1000*(p1[1] - p2[1])]
+                p1 = [p2[0] + 1000*(p1[0] - p2[0]), p2[1] + 1000*(p1[1] - p2[1])]
             if sign(self.__parser__.run(p1[0], p1[1])) != sign(self.__parser__.run(p2[0], p2[1])):
                 self.x.append(self.__bisect__(p1, p2))
 
@@ -329,7 +329,7 @@ class TTri:
         if self.__length_optimize__ is True:
             if self.__optimize_boundary_for_length__() is False:
                 return False
-        for i in range(0, 1):
+        for i in range(0, 5):
             # Оптимизация по критерию угла между соседними грничными сегментами
             if self.__angle_optimize__ is True:
                 if self.__optimize_boundary_for_angle__ is False:

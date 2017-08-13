@@ -11,7 +11,7 @@ def main():
     tri = TTri()
 
     tri.set_file_name(file_name)
-    tri.set_angle_optimize(False)
+    tri.set_angle_optimize(True)
     tri.set_length_optimize(True)
     tri.set_step(250)
 #    tri.set_step(600)
