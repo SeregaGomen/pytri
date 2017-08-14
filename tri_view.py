@@ -12,13 +12,15 @@ class TTriView(Frame):
         Frame.__init__(self, root)
         root.title('R-function - ' + name)
 
-        self.__scale__ = 1
         self.__x__ = x
         self.__fe__ = fe
         self.__be__ = be
         self.__show_vertex__ = show_vertex
         self.__show_fe__ = show_fe
         self.__show_be__ = show_be
+        self.__scale__ = 1
+        self.__shift_x__ = 0
+        self.__shift_y__ = 0
 
         self.__x_min__ = [min(x[i][0] for i in range(0, len(x))), min(x[i][1] for i in range(0, len(x)))]
         self.__x_max__ = [max(x[i][0] for i in range(0, len(x))), max(x[i][1] for i in range(0, len(x)))]
@@ -29,14 +31,20 @@ class TTriView(Frame):
         self.display = Canvas(self, width=size, height=size, bd=0, highlightthickness=0)
         self.display.grid(row=0, sticky=W+E+N+S)
         self.pack(fill=BOTH, expand=1)
-        self.bind("<Configure>", self.resize)
-        self.display.bind("<MouseWheel>", self.repaint)
+        self.bind('<Configure>', self.resize)
+        self.display.bind('<MouseWheel>', self.zoom)
+        self.display.bind('<Button>', 'z', self.shift)
 
     def resize(self, event):
         self.paint(event.width, event.height)
 
-    def repaint(self, event):
+    def zoom(self, event):
         self.__scale__ = self.__scale__*1.1 if event.delta > 0 else self.__scale__/1.1
+        w, h = self.display.winfo_width(), self.display.winfo_height()
+        self.paint(w, h)
+
+    def shift(self, event):
+        self.__shift_x__ += 10
         w, h = self.display.winfo_width(), self.display.winfo_height()
         self.paint(w, h)
 
@@ -47,7 +55,8 @@ class TTriView(Frame):
         w = width*self.__scale__
         h = height*self.__scale__
         dx = [self.__x_max__[0] - self.__x_min__[0], self.__x_max__[1] - self.__x_min__[1]]
-        s_x = [(self.__x_max__[0] + self.__x_min__[0])/2, (self.__x_max__[1] + self.__x_min__[1])/2]
+        s_x = [self.__shift_x__ + (self.__x_max__[0] + self.__x_min__[0])/2,
+               self.__shift_y__ + (self.__x_max__[1] + self.__x_min__[1])/2]
 
         # Изображение узлов
         if self.__show_vertex__:
