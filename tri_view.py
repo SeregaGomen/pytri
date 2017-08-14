@@ -33,7 +33,8 @@ class TTriView(Frame):
         self.pack(fill=BOTH, expand=1)
         self.bind('<Configure>', self.resize)
         self.display.bind('<MouseWheel>', self.zoom)
-        self.display.bind('<Button>', 'z', self.shift)
+        self.display.bind('<Button-3>', self.shift)
+        self.display.bind_all('<KeyPress>', self.shift)
 
     def resize(self, event):
         self.paint(event.width, event.height)
@@ -44,8 +45,17 @@ class TTriView(Frame):
         self.paint(w, h)
 
     def shift(self, event):
-        self.__shift_x__ += 10
         w, h = self.display.winfo_width(), self.display.winfo_height()
+        if event.keysym == 'Right':
+            self.__shift_x__ -= (self.__x_max__[0] - self.__x_min__[0])/100
+        elif event.keysym == 'Left':
+            self.__shift_x__ += (self.__x_max__[0] - self.__x_min__[0])/100
+        elif event.keysym == 'Up':
+            self.__shift_y__ += (self.__x_max__[1] - self.__x_min__[1])/100
+        elif event.keysym == 'Down':
+            self.__shift_y__ -= (self.__x_max__[1] - self.__x_min__[1])/100
+        else:
+            return
         self.paint(w, h)
 
     def paint(self, width, height):
