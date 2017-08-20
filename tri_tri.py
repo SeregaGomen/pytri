@@ -230,8 +230,8 @@ class TTri:
             size_x = len(self.x)
             for i in range(0, len(self.be)):
                 # Определяем углы между соседними граничными сегментами
-                angle = max(self.__angle__(i, self.be[i][2]), self.__angle__(i, self.be[i][3]))
-                if angle > self.__max_angle__:
+                if self.__angle__(i, self.be[i][2]) > self.__max_angle__ and \
+                   self.__angle__(i, self.be[i][3]) > self.__max_angle__:
                     self.__optimize_boundary_segment__(i)
             if size_x != len(self.x):
                 # Перетриангуляция
