@@ -1,0 +1,17 @@
+######################
+#       Кольцо
+######################
+domain circle1(x, y)
+begin
+    R = 1
+    return R^2 - x^2 - y^2
+end
+domain circle2(x, y)
+begin
+    R = 0.8
+    return R^2 - x^2 - y^2
+end
+domain ring(x,y)
+begin
+    return circle1(x, y) and not circle2(x, y) 
+end
