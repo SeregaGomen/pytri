@@ -57,13 +57,13 @@ class TTri:
             l = scale*self.__length__(x1, x2)
             d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1)*(b**2 - 2*b*xc[1] - l**2 + xc[0]**2 + xc[1]**2)
             d = 0 if abs(d) < self.__eps__ else d
-            if d < 0:
-                return False, x1, x2
+            if d <= 0:
+                return []
             r1 = (-(2*b*k - 2*k*xc[1] - 2*xc[0]) - d**0.5)/2/(k**2 + 1)
             r2 = (-(2*b*k - 2*k*xc[1] - 2*xc[0]) + d**0.5)/2/(k**2 + 1)
             p1 = [r1, r1*k + b]
             p2 = [r2, r2*k + b]
-        return True, p1, p2
+        return [p1, p2]
 
     # Определение угла между соседними граничными сегментами
     def __angle__(self, i, j):
@@ -199,9 +199,9 @@ class TTri:
         for i in range(0, count):
             x1 = [self.x[self.be[index][0]][0] + i*h[0], self.x[self.be[index][0]][1] + i*h[1]]
             x2 = [self.x[self.be[index][0]][0] + (i + 1)*h[0], self.x[self.be[index][0]][1] + (i + 1)*h[1]]
-            is_ok, p1, p2 = self.__get_orthogonal__(x1, x2, scale)
-            if is_ok is True:
-                self.__find_root__(p1, p2)
+            p = self.__get_orthogonal__(x1, x2, scale)
+            if len(p):
+                self.__find_root__(p[0], p[1])
 
     # Оптимизация границы области по критерию соотношения длин соседних сегментов
     def __optimize_boundary_for_length__(self):
