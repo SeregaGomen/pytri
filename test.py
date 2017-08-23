@@ -7,7 +7,7 @@ from tri_tri import TTri
 
 
 def main():
-    file_name = 'test/test3.rf'
+    file_name = 'test/test4.rf'
     tri = TTri()
 
     tri.set_file_name(file_name)

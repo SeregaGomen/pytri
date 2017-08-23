@@ -96,5 +96,5 @@ class TTriView(Frame):
                 self.display.create_line([x[0][0], x[0][1]], [x[1][0], x[1][1]], fill='blue', tags='LINE')
 
         #-----------------
-        self.display.create_oval([(-1.0 - s_x[0])*w/dx[0]*0.9 + width/2,(-1.0 - s_x[1])*h/dx[1]*0.9 + height/2],[(1.0 - s_x[0])*w/dx[0]*0.9 + width/2,(1.0 - s_x[1])*h/dx[1]*0.9 + height/2], tags='OVAL')
-        self.display.create_oval([(-0.8 - s_x[0])*w/dx[0]*0.9 + width/2,(-0.8 - s_x[1])*h/dx[1]*0.9 + height/2],[(0.8 - s_x[0])*w/dx[0]*0.9 + width/2,(0.8 - s_x[1])*h/dx[1]*0.9 + height/2], tags='OVAL')
+#        self.display.create_oval([(-1.0 - s_x[0])*w/dx[0]*0.9 + width/2,(-1.0 - s_x[1])*h/dx[1]*0.9 + height/2],[(1.0 - s_x[0])*w/dx[0]*0.9 + width/2,(1.0 - s_x[1])*h/dx[1]*0.9 + height/2], tags='OVAL')
+#        self.display.create_oval([(-0.8 - s_x[0])*w/dx[0]*0.9 + width/2,(-0.8 - s_x[1])*h/dx[1]*0.9 + height/2],[(0.8 - s_x[0])*w/dx[0]*0.9 + width/2,(0.8 - s_x[1])*h/dx[1]*0.9 + height/2], tags='OVAL')
