@@ -7,7 +7,7 @@ from tri_tri import TTri
 
 
 def main():
-    file_name = 'test/test4.rf'
+    file_name = 'test/test0.rf'
     tri = TTri()
 
     tri.set_file_name(file_name)
@@ -16,7 +16,7 @@ def main():
     tri.set_step(250)
 #    tri.set_step(600)
     tri.set_eps(1.0e-6)
-    tri.set_angle(30)
+    tri.set_angle(15)
     tri.set_ratio(1.5)
 
     if tri.start() is False:

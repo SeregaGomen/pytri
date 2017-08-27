@@ -100,52 +100,15 @@ class TTri:
         return [(x1[0] + x2[0])*0.5, (x1[1] + x2[1])*0.5]
 
     # Поиск всех нулей R-функции на заданном отрезке
-    def __find_root__(self, x1, x2, index=-1):
-        h = [(x2[0] - x1[0])/self.__max_step__, (x2[1] - x1[1])/self.__max_step__]
-        for i in range(0, self.__max_step__ - 1):
+    def __find_root__(self, x1, x2, step):
+        h = [(x2[0] - x1[0])/step, (x2[1] - x1[1])/step]
+        for i in range(0, step - 1):
             p1 = [x1[0] + i*h[0], x1[1] + i*h[1]]
             p2 = [x1[0] + (i + 1)*h[0], x1[1] + (i + 1)*h[1]]
             if sign(self.__parser__.run(p1[0], p1[1])) != sign(self.__parser__.run(p2[0], p2[1])):
                 self.x.append(self.__bisect__(p1, p2))
-                if index != -1:
-                    # Перестройка сетки
-                    self.__rebuild_mesh__(index)
 
-    # Перестройка сетки после добавления нового узла
-    def __rebuild_mesh__(self, i):
-        # Модификация существующего треугольника
-        j = self.be[i][4]
-        old_fe = [self.fe[j][0], self.fe[j][1], self.fe[j][2]] + sorted([self.fe[j][3], self.fe[j][4], self.fe[j][5]])
-        self.fe[j][0] = self.be[i][0]
-        self.fe[j][1] = len(self.x) - 1
-        self.fe[j][2] = [i for i in [old_fe[0], old_fe[1], old_fe[2]] if i not in [self.be[i][0], self.be[i][1]]][0]
-        self.fe[j][3] = -1
-        self.fe[j][4] = len(self.fe)
-        self.fe[j][5] = old_fe[4] if self.fe[j][0] in self.fe[old_fe[4]] and self.fe[j][2] in self.fe[old_fe[4]] \
-            else old_fe[5]
-        # Добавление нового треугольника
-        new_fe = [0, 0, 0, 0, 0, 0]
-        new_fe[0] = self.be[i][1]
-        new_fe[1] = self.fe[j][1]
-        new_fe[2] = self.fe[j][2]
-        new_fe[3] = -1
-        new_fe[4] = j
-        new_fe[5] = old_fe[4] if new_fe[0] in self.fe[old_fe[4]] and new_fe[2] in self.fe[old_fe[4]] else old_fe[5]
-        self.fe.append(new_fe)
-        # Модификация текущего граничного сегмента
-        old_be = [self.be[i][0], self.be[i][1], self.be[i][2], self.be[i][3]]
-        self.be[i][1] = len(self.x) - 1
-        self.be[i][2] = len(self.be)
-        self.be[i][3] = old_be[3] if old_be[0] in [self.be[old_be[3]][0], self.be[old_be[3]][1]] else old_be[2]
-        self.be[i][5] = self.__length__(self.x[self.be[i][0]], self.x[self.be[i][1]])
-        # Добавление нового граничного сегмента
-        new_be = [len(self.x) - 1, old_be[1], i, -1, -1, -1]
-        new_be[3] = old_be[2] if old_be[1] in [self.be[old_be[2]][0], self.be[old_be[2]][1]] else old_be[3]
-        new_be[4] = len(self.fe) - 1
-        new_be[5] = self.__length__(self.x[new_be[0]], self.x[new_be[1]])
-        self.be.append(new_be)
-
-    # Процедура поиска границы области
+    # Процедура поиска опорного множества точек на границе области
     def __find_boundary__(self, min_x, max_x):
         h_x = (max_x[0] - min_x[0])/self.__max_step__
         self.__progress__.set_process('Search of the region boundary...', 1, self.__max_step__)
@@ -153,7 +116,7 @@ class TTri:
             self.__progress__.set_progress(i + 1)
             x1 = [min_x[0] + i*h_x, min_x[1]]
             x2 = [min_x[0] + i*h_x, max_x[1]]
-            self.__find_root__(x1, x2)
+            self.__find_root__(x1, x2, self.__max_step__)
 
     # Предварительная триангуляция
     def __pre_triangulation__(self):
@@ -234,7 +197,7 @@ class TTri:
 
     # Деление граничного сегмента по критерию длины
     def __optimize_boundary_segment__(self, index, count=2):
-        scale = 10   # Параметр, определяющий длину отрезка поиска нуля R-функции
+        scale = 2   # Параметр, определяющий длину отрезка поиска нуля R-функции
         h = [(self.x[self.be[index][1]][0] - self.x[self.be[index][0]][0])/count,
              (self.x[self.be[index][1]][1] - self.x[self.be[index][0]][1])/count]
         for i in range(0, count):
@@ -242,7 +205,11 @@ class TTri:
             x2 = [self.x[self.be[index][0]][0] + (i + 1)*h[0], self.x[self.be[index][0]][1] + (i + 1)*h[1]]
             p = self.__get_orthogonal__(x1, x2, scale)
             if len(p):
-                self.__find_root__(p[0], p[1], index)
+                # self.__find_root__(p[0], p[1], 2)
+                if sign(self.__parser__.run(p[0][0], p[0][1])) != sign(self.__parser__.run(p[1][0], p[1][1])):
+                    self.x.append(self.__bisect__(p[0], p[1]))
+
+
 
     # Оптимизация границы области по критерию соотношения длин соседних сегментов
     def __optimize_boundary_for_length__(self):
@@ -256,30 +223,30 @@ class TTri:
         for i in range(0, len(self.be)):
             if self.be[i][5]/avg_len > self.__max_ratio__:
                 self.__optimize_boundary_segment__(i, int(ceil(self.be[i][5]/avg_len)))
-#        if size_x != len(self.x):
-#            # Перетриангуляция
-#            if self.__pre_triangulation__() is False:
-#                return False
-#            # Формирование границы области
-#            self.__create_boundary__()
+        if size_x != len(self.x):
+            # Перетриангуляция
+            if self.__pre_triangulation__() is False:
+                return False
+            # Формирование границы области
+            self.__create_boundary__()
         return True
 
     # Оптимизация границы области по критерию угла между соседними сегментами
     @property
     def __optimize_boundary_for_angle__(self):
-        for k in range(0, 1):
+        for k in range(0, 20):
             size_x = len(self.x)
             for i in range(0, len(self.be)):
                 # Определяем углы между соседними граничными сегментами
                 if self.__angle__(i, self.be[i][2]) > self.__max_angle__ and \
                    self.__angle__(i, self.be[i][3]) > self.__max_angle__:
                     self.__optimize_boundary_segment__(i)
-#            if size_x != len(self.x):
-#                # Перетриангуляция
-#                if self.__pre_triangulation__() is False:
-#                    return False
-#                # Формирование границы области
-#                self.__create_boundary__()
+            if size_x != len(self.x):
+                # Перетриангуляция
+                if self.__pre_triangulation__() is False:
+                    return False
+                # Формирование границы области
+                self.__create_boundary__()
         return True
 
     # Удаление "висячих" узлов
