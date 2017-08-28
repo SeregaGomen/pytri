@@ -197,7 +197,7 @@ class TTri:
 
     # Деление граничного сегмента по критерию длины
     def __optimize_boundary_segment__(self, index, count=2):
-        scale = 2   # Параметр, определяющий длину отрезка поиска нуля R-функции
+        scale = 10   # Параметр, определяющий длину отрезка поиска нуля R-функции
         h = [(self.x[self.be[index][1]][0] - self.x[self.be[index][0]][0])/count,
              (self.x[self.be[index][1]][1] - self.x[self.be[index][0]][1])/count]
         for i in range(0, count):
@@ -205,11 +205,8 @@ class TTri:
             x2 = [self.x[self.be[index][0]][0] + (i + 1)*h[0], self.x[self.be[index][0]][1] + (i + 1)*h[1]]
             p = self.__get_orthogonal__(x1, x2, scale)
             if len(p):
-                # self.__find_root__(p[0], p[1], 2)
-                if sign(self.__parser__.run(p[0][0], p[0][1])) != sign(self.__parser__.run(p[1][0], p[1][1])):
-                    self.x.append(self.__bisect__(p[0], p[1]))
-
-
+                self.__find_root__(p[0], p[1], 10)
+#                self.__find_root__(p[0], p[1], self.__max_step__)
 
     # Оптимизация границы области по критерию соотношения длин соседних сегментов
     def __optimize_boundary_for_length__(self):
@@ -239,7 +236,7 @@ class TTri:
             for i in range(0, len(self.be)):
                 # Определяем углы между соседними граничными сегментами
                 if self.__angle__(i, self.be[i][2]) > self.__max_angle__ and \
-                   self.__angle__(i, self.be[i][3]) > self.__max_angle__:
+                    self.__angle__(i, self.be[i][3]) > self.__max_angle__:
                     self.__optimize_boundary_segment__(i)
             if size_x != len(self.x):
                 # Перетриангуляция
