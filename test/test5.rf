@@ -1,0 +1,36 @@
+# Прямоугольник с отверстиями
+domain band_h(x, y)
+begin
+    a = 5
+    return a^2 - x^2
+end
+domain band_v(x, y)
+begin
+    b = 1
+    return b^2 - y^2
+end
+domain circle1(x, y)
+begin
+    R = 0.5
+    a = -5
+    b = 0
+    return R^2 - (x - a)^2 - (y - b)^2
+end
+domain circle2(x, y)
+begin
+    R = 0.5
+    a = 5
+    b = 0
+    return R^2 - (x - a)^2 - (y - b)^2
+end
+domain circle3(x, y)
+begin
+    R = 0.5
+    a = 0
+    b = 0
+    return R^2 - (x - a)^2 - (y - b)^2
+end
+domain band(x, y)
+begin
+    return band_h(x,y) and band_v(x,y) and not circle1(x,y) and not circle2(x,y) and not circle3(x,y)
+end
