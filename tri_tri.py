@@ -54,8 +54,8 @@ class TTri:
             k = (x2[0] - x1[0])/(x1[1] - x2[1])
             b = xc[1] - xc[0]*k
             # Координаты точек, лежащих на ортогогнальной прямой на заданном расстоянии от точки xc
-            l = scale*self.__length__(x1, x2)
-            d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1)*(b**2 - 2*b*xc[1] - l**2 + xc[0]**2 + xc[1]**2)
+            d = (2*b*k - 2*k*xc[1] - 2*xc[0])**2 - 4*(k**2 + 1) * \
+                (b**2 - 2*b*xc[1] - scale*self.__length__(x1, x2)**2 + xc[0]**2 + xc[1]**2)
             d = 0 if abs(d) < self.__eps__ else d
             if d <= 0:
                 return []
@@ -138,26 +138,32 @@ class TTri:
     # Построение границы области
     def __create_boundary__(self):
         self.be = []
+        ind = [[0, 1], [1, 2], [2, 0]]
+        index_map = []
+        for i in range(0, len(self.fe)):
+            index_map.append([-1, -1, -1])
         self.__progress__.set_process('Create boundary...', 1, len(self.fe))
+        # Вычеркиваем все смежные ребра треугольников
         for i in range(0, len(self.fe)):
             self.__progress__.set_progress(i + 1)
-            v = [-1, -1, -1]
-            # Находим треугольники, содержащие граничные ребра
-            for j in range(0, len(self.fe)):
-                if i != j:
-                    # Ищем ребра соседних треугольников, которые не являются общими
-                    for k in range(0, 3):
+            for j in range(i + 1, len(self.fe)):
+                # Ищем ребра соседних треугольников, которые не являются общими
+                for k in range(0, 3):
+                    if index_map[i][k] == -1:
+                        g1 = sorted([self.fe[i][ind[k][0]], self.fe[i][ind[k][1]]])
                         for m in range(0, 3):
-                            if (self.fe[i][k] == self.fe[j][m] and
-                                    self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m + 1 if m + 1 < 3 else 0]) or \
-                                    (self.fe[i][k] == self.fe[j][m + 1 if m + 1 < 3 else 0] and
-                                     self.fe[i][k + 1 if k + 1 < 3 else 0] == self.fe[j][m]):
-                                v[k] = j
+                            if index_map[j][m] == -1:
+                                g2 = sorted([self.fe[j][ind[m][0]], self.fe[j][ind[m][1]]])
+                                if g1 == g2:
+                                    index_map[i][k] = j
+                                    index_map[j][m] = i
+        # Невычеркнутые грани добавляем в список ГЭ
+        for i in range(0, len(self.fe)):
             for j in range(0, 3):
-                if v[j] == -1:
-                    length = self.__length__(self.x[self.fe[i][j]], self.x[self.fe[i][j + 1 if j + 1 < 3 else 0]])
-                    self.be.append([self.fe[i][j], self.fe[i][j + 1 if j + 1 < 3 else 0], -1, -1, i, length])
-            self.fe[i] += v
+                if index_map[i][j] == -1:
+                    length = self.__length__(self.x[self.fe[i][ind[j][0]]], self.x[self.fe[i][ind[j][1]]])
+                    self.be.append([self.fe[i][ind[j][0]], self.fe[i][ind[j][1]], -1, -1, i, length])
+            self.fe[i] += index_map[i]
         # Поиск соседей к граничным элементам
         self.__find_triangle_neighborhood__()
 
@@ -236,7 +242,7 @@ class TTri:
             for i in range(0, len(self.be)):
                 # Определяем углы между соседними граничными сегментами
                 if self.__angle__(i, self.be[i][2]) > self.__max_angle__ and \
-                    self.__angle__(i, self.be[i][3]) > self.__max_angle__:
+                        self.__angle__(i, self.be[i][3]) > self.__max_angle__:
                     self.__optimize_boundary_segment__(i)
             if size_x != len(self.x):
                 # Перетриангуляция

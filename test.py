@@ -8,7 +8,7 @@ from time import time
 
 
 def main():
-    file_name = 'test/test5.rf'
+    file_name = 'test/test3.rf'
     tri = TTri()
 
     tri.set_file_name(file_name)
