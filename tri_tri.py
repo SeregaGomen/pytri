@@ -36,6 +36,7 @@ class TTri:
         self.__progress__ = TProgress()     # Индикатор прогресса расчета
         self.__length_optimize__ = True     # Оптимизация по критерию соотношения длин соседних граничных сегментов
         self.__angle_optimize__ = True      # Оптимизация по критерию угла между соседними граничными сегментами
+        self.__full_optimize__ = True       # Полная оптимизация (по Рапперту)
 
     @staticmethod
     # Определение расстояния между двумя точками
@@ -272,6 +273,31 @@ class TTri:
             self.__create_boundary__()
         return True
 
+    # Оптимизация по схеме  Рапперта
+    def __optimize__(self):
+        size_x = len(self.x)
+        # Оптимизация границы
+        for i in range(0, len(self.be)):
+            # Вычисляем координаты центра описанной около ГЭ окружности
+            c = [(self.x[self.be[i][0]][0] + self.x[self.be[i][1]][0])/2,
+                 (self.x[self.be[i][0]][1] + self.x[self.be[i][1]][1])/2]
+            # Проверяем, попадают ли в описанную около ГЭ окружность вершины соседних ГЭ
+            for j in range(0, 2):
+                for k in range(0, 2):
+                    if self.be[self.be[i][2 + j]][k] not in self.be[i]:
+                        x = [self.x[self.be[self.be[i][2 + j]][k]][0], self.x[self.be[self.be[i][2 + j]][k]][1]]
+                        if self.__length__(x, c) <= self.be[i][5]/2:
+                            # Делим текущий ГЭ пополам
+                            self.x.append(c)
+                            break
+        if size_x != len(self.x):
+            # Перетриангуляция
+            if self.__pre_triangulation__() is False:
+                return False
+            # Формирование границы области
+            self.__create_boundary__()
+        return True
+
     # Запуск процедуры построения триангуляции
     def start(self):
         try:
@@ -305,9 +331,13 @@ class TTri:
         if self.__length_optimize__ is True:
             if self.__optimize_boundary_for_length__() is False:
                 return False
-        # Оптимизация по критерию угла между соседними грничными сегментами
+        # Оптимизация по критерию угла между соседними граничными сегментами
         if self.__angle_optimize__ is True:
             if self.__optimize_boundary_for_angle__ is False:
+                return False
+        # Оптимизация по схеме  Рапперта
+        if self.__full_optimize__ is True:
+            if self.__optimize__() is False:
                 return False
         return True
 
@@ -343,3 +373,6 @@ class TTri:
     # Здание оптимизвции по соотношению длин соседних сегментов
     def set_length_optimize(self, is_length):
         self.__length_optimize__ = is_length
+
+    def set_full_optimize(self, is_optimize):
+        self.__full_optimize__ = is_optimize
