@@ -315,7 +315,8 @@ class TTri:
                         if self.__length__(x, c0) <= self.be[i][5]/2:
                             # Делим текущий ГЭ пополам
                             #self.__optimize_boundary_segment__(i)
-                            self.x.append(c0)
+                            if sign(self.__parser__.run(c0[0], c0[1])) >= 0:
+                                self.x.append(c0)
                             break
         # Оптимизация сетки
         self.__progress__.set_process('Optimize mesh...', 1, len(self.fe))
@@ -329,7 +330,11 @@ class TTri:
                     for k in range(0, 3):
                         if self.fe[self.fe[i][3 + j]][k] not in self.fe[i]:
                             x = [self.x[self.fe[self.fe[i][3 + j]][k]][0], self.x[self.fe[self.fe[i][3 + j]][k]][1]]
-                            self.x.append(c0)
+                            if self.__length__(x, c0) < r:
+                                # Добавляем новый узел в сетку
+                                if sign(self.__parser__.run(c0[0], c0[1])) >= 0:
+                                    self.x.append(c0)
+                                    break
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
@@ -376,9 +381,10 @@ class TTri:
             if self.__optimize_boundary_for_angle__ is False:
                 return False
         # Оптимизация по схеме  Рапперта
-        if self.__full_optimize__ is True:
-            if self.__optimize__() is False:
-                return False
+        for i in range(0, 3):
+            if self.__full_optimize__ is True:
+                if self.__optimize__() is False:
+                    return False
         return True
 
     # Задание имени файла, содержащего описание R-функции на входном языке
