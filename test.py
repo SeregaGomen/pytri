@@ -8,13 +8,13 @@ from time import time
 
 
 def main():
-    file_name = 'test/test5.rf'
+    file_name = 'test/test0.rf'
     tri = TTri()
 
     tri.set_file_name(file_name)
     tri.set_angle_optimize(True)
     tri.set_length_optimize(True)
-    tri.set_full_optimize(False)
+    tri.set_full_optimize(True)
 #    tri.set_step(250)
     tri.set_step(250)
     tri.set_eps(1.0e-6)
@@ -27,7 +27,7 @@ def main():
     end = time()
     print('Calculation time: ', end - begin)
 
-    app = TTriView(Tk(), file_name, tri.x, tri.fe, tri.be, show_vertex=True, show_fe=False, show_be=True)
+    app = TTriView(Tk(), file_name, tri.x, tri.fe, tri.be, show_vertex=True, show_fe=True, show_be=True)
     app.mainloop()
 
 

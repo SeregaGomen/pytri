@@ -43,6 +43,30 @@ class TTri:
     def __length__(x1, x2):
         return ((x2[0] - x1[0])**2 + (x2[1] - x1[1])**2)**0.5
 
+    # Поиск центра описанной около заданного треугольника окружности
+    def __tri_center__(self, i):
+        xa = self.x[self.fe[i][0]][0]
+        ya = self.x[self.fe[i][0]][1]
+        xb = self.x[self.fe[i][1]][0]
+        yb = self.x[self.fe[i][1]][1]
+        xc = self.x[self.fe[i][2]][0]
+        yc = self.x[self.fe[i][2]][1]
+        d = 2*np.linalg.det(np.array([[xa, ya, 1], [xb, yb, 1], [xc, yc, 1]]))
+        x0 = np.linalg.det(np.array([[xa**2 + ya**2, ya, 1], [xb**2 + yb**2, yb, 1], [xc**2 + yc**2, yc, 1]]))/d
+        y0 = -np.linalg.det(np.array([[xa**2 + ya**2, xa, 1], [xb**2 + yb**2, xb, 1], [xc**2 + yc**2, xc, 1]]))/d
+        return [x0, y0]
+
+    # Вычисление радиуса описанной около треугольника окружности
+    def __tri_radius__(self, i):
+        a = self.__length__([self.x[self.fe[i][0]][0], self.x[self.fe[i][0]][1]],
+                            [self.x[self.fe[i][1]][0], self.x[self.fe[i][1]][1]])
+        b = self.__length__([self.x[self.fe[i][1]][0], self.x[self.fe[i][1]][1]],
+                            [self.x[self.fe[i][2]][0], self.x[self.fe[i][2]][1]])
+        c = self.__length__([self.x[self.fe[i][2]][0], self.x[self.fe[i][2]][1]],
+                            [self.x[self.fe[i][0]][0], self.x[self.fe[i][0]][1]])
+        p = (a + b + c)/2
+        return a*b*c/(4*p*(p*(p - a)*(p - b)*(p - c)**0.5))
+
     # Поиск координат отрезка, ортогонального заданному граничному сегменту
     def __get_orthogonal__(self, x1, x2, scale):
         xc = [(x1[0] + x2[0])/2, (x1[1] + x2[1])/2]
@@ -277,19 +301,35 @@ class TTri:
     def __optimize__(self):
         size_x = len(self.x)
         # Оптимизация границы
+        self.__progress__.set_process('Optimize boundary...', 1, len(self.be))
         for i in range(0, len(self.be)):
+            self.__progress__.set_progress(i + 1)
             # Вычисляем координаты центра описанной около ГЭ окружности
-            c = [(self.x[self.be[i][0]][0] + self.x[self.be[i][1]][0])/2,
+            c0 = [(self.x[self.be[i][0]][0] + self.x[self.be[i][1]][0])/2,
                  (self.x[self.be[i][0]][1] + self.x[self.be[i][1]][1])/2]
             # Проверяем, попадают ли в описанную около ГЭ окружность вершины соседних ГЭ
             for j in range(0, 2):
                 for k in range(0, 2):
                     if self.be[self.be[i][2 + j]][k] not in self.be[i]:
                         x = [self.x[self.be[self.be[i][2 + j]][k]][0], self.x[self.be[self.be[i][2 + j]][k]][1]]
-                        if self.__length__(x, c) <= self.be[i][5]/2:
+                        if self.__length__(x, c0) <= self.be[i][5]/2:
                             # Делим текущий ГЭ пополам
-                            self.x.append(c)
+                            #self.__optimize_boundary_segment__(i)
+                            self.x.append(c0)
                             break
+        # Оптимизация сетки
+        self.__progress__.set_process('Optimize mesh...', 1, len(self.fe))
+        for i in range(0, len(self.fe)):
+            # Вычисляем координаты центра текущего КЭ и радиус описанной около него окружности
+            c0 = self.__tri_center__(i)
+            r = self.__tri_radius__(i)
+            # Проверяем попадают ли вершины соседних КЭ внутрь этой окружности
+            for j in range(0, 3):
+                if self.fe[i][3 + j] != -1:
+                    for k in range(0, 3):
+                        if self.fe[self.fe[i][3 + j]][k] not in self.fe[i]:
+                            x = [self.x[self.fe[self.fe[i][3 + j]][k]][0], self.x[self.fe[self.fe[i][3 + j]][k]][1]]
+                            self.x.append(c0)
         if size_x != len(self.x):
             # Перетриангуляция
             if self.__pre_triangulation__() is False:
